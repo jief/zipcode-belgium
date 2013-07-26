@@ -10,7 +10,3 @@ Based on http://www.bpost.be/site/fr/residential/customerservice/search/postal_c
 * Script PHP pour extraire les lng et lat depuis Google Maps
 
 La liste des commnues provient de http://www.bpost.be/site/fr/residential/customerservice/search/postal_codes.html
-
-
-
-
