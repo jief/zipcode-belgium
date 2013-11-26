@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Use Google Maps APT to extract lng & lat for each belgian cities
+ * Use Google Maps API to extract lng & lat for each belgian cities
  * 
  * @author Jean-Francois Monfort <jf.monfort@gmail.com>
  */
