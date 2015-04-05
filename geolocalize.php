@@ -1,48 +1,49 @@
 <?php
+require 'vendor/autoload.php';
+
 
 /**
- * Use Google Maps API to extract lng & lat for each belgian city
- * 
+ * Use Openstreetmap API to extract lng & lat for each belgian city
+ *
  * @author Jean-Francois Monfort <jf.monfort@gmail.com>
  */
 
 $file = "zipcodes_num_fr.csv";
-$new_file = "zipcodes_lonlat.csv";
-$new_file_json = "zipcodes_lonlat.json";
-$gmaps = "http://maps.googleapis.com/maps/api/geocode/json?";
+$new_file = "zipcode-belgium.csv";
+$new_file_json = "zipcode-belgium.json";
 $export = array();
 
 if (($handle = fopen($file, "r")) !== FALSE) {
   $fp = fopen($new_file, 'w');
 
-  while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) { 
-    $q = $data[0] . ' ' . $data[1]. ' belgium';
-    $url = $gmaps . '&address=' . urlencode($q) . '&sensor=false';
+  $geocoder = new \Geocoder\Geocoder();
+  $adapter = new \Geocoder\HttpAdapter\CurlHttpAdapter();
+  $chain = new \Geocoder\Provider\ChainProvider(array(
+    new \Geocoder\Provider\OpenStreetMapProvider($adapter, 'be'),
+  ));
+  $geocoder->registerProvider($chain);
 
-    sleep(1);
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    $output = json_decode(curl_exec($ch));
-    $info = curl_getinfo($ch);
-    curl_close($ch);
-
-    if($info['http_code'] == '200') {
-      if($output->status == 'OK') {
-        $row = array(
-          "zip" => $data[0], 
-          "city" => mb_convert_case($data[1], MB_CASE_TITLE, "UTF-8"),
-          "lng" => $output->results[0]->geometry->location->lng,
-          "lat" => $output->results[0]->geometry->location->lat,
-        );
-        $export[] = $row;
-        fputcsv($fp, $row);
-      } else {
-        print_r($output);
-      }
-    } else {
-      print_r($info);
+  while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+    if($data[2] == "") {
+      continue;
     }
+
+    try {
+      $addr = $data[0] . ' ' . $data[1]. ' Belgium';
+      $geocode = $geocoder->geocode($addr);
+
+      $row = array(
+        "zip" => $data[0],
+        "city" => mb_convert_case($data[1], MB_CASE_TITLE, "UTF-8"),
+        "lng" => $geocode->getLongitude(),
+        "lat" => $geocode->getLatitude(),
+      );
+      $export[] = $row;
+      fputcsv($fp, $row);
+    } catch (\Exception $e) {
+        echo $e->getMessage();
+    }
+    sleep(1);
   }
   fclose($fp);
   fclose($handle);
